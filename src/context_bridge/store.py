@@ -1,6 +1,7 @@
 """SQLite-backed memory store with full-text search."""
 import sqlite3
 import json
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -84,13 +85,29 @@ class MemoryStore:
         self.conn.commit()
         return cur.lastrowid or 0
 
+    @staticmethod
+    def _escape_fts5_query(text: str) -> str:
+        """Escape special FTS5 characters in user query to prevent query syntax errors."""
+        if not text:
+            return ""
+        clean = re.sub(r'[^\w\s]', ' ', text)
+        tokens = []
+        for word in clean.split():
+            if word:
+                tokens.append(f'"{word}"')
+        return " ".join(tokens)
+
     def search(self, query: Query) -> list[Memory]:
+        escaped_query = self._escape_fts5_query(query.text)
+        if not escaped_query:
+            return []
+
         sql = """
             SELECT m.* FROM memories m
             JOIN memories_fts f ON m.id = f.rowid
             WHERE memories_fts MATCH ?
         """
-        params: list = [query.text]
+        params: list = [escaped_query]
 
         if query.agent:
             sql += " AND m.source_agent = ?"

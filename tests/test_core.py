@@ -79,6 +79,35 @@ class TestStore:
         # FTS may still return partial matches, but nothing should be perfect
         assert isinstance(results, list)
 
+    def test_search_double_quotes(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+        # Should not crash on double quotes (unbalanced or phrases) and match terms present
+        query = Query(text='decided "SQLite" "zero-config"')
+        results = tmp_store.search(query)
+        assert len(results) >= 1
+        assert results[0].session_id == sample_memory.session_id
+
+        # Edge case: only quotes
+        empty_query = Query(text='"""')
+        assert tmp_store.search(empty_query) == []
+
+    def test_search_fts5_special_characters(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+        # Should safely handle reserved words and syntax characters: AND, OR, NOT, *, -, :, ()
+        test_queries = [
+            "SQLite AND zero-config",
+            "SQLite OR postgresql",
+            "NOT postgresql SQLite",
+            "SQLite*",
+            "test:SQLite",
+            "(SQLite)",
+            "*-+^:",
+        ]
+        for q_text in test_queries:
+            query = Query(text=q_text)
+            results = tmp_store.search(query)
+            assert isinstance(results, list)
+
     def test_mark_indexed(self, tmp_store, sample_session):
         tmp_store.add_session(sample_session)
         tmp_store.mark_indexed("test-session-1")
