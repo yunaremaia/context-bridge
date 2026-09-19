@@ -121,6 +121,59 @@ class TestStore:
         assert stats["total_sessions"] >= 1
         assert "claude" in stats["agents"]
 
+    def test_search_with_malformed_fts5_syntax(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+        queries = [
+            'hello "world',
+            'hello (world',
+            'hello )world',
+        ]
+        for text in queries:
+            query = Query(text=text)
+            results = tmp_store.search(query)
+
+            assert isinstance(results, list)
+
+    def test_search_with_fts5_injection_input(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+        query = Query(text="tag:secret OR 1=1")
+        try:
+            results = tmp_store.search(query)
+        except Exception as exc:
+            pytest.fail(f"FTS5 injection input raised an exception: {exc}")
+        assert isinstance(results, list)
+
+    def test_search_supports_phrase_query(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+
+        other_memory = Memory(
+            content="SQLite is useful for local database storage",
+            memory_type=MemoryType.DECISION,
+            source_agent="claude",
+            session_id="test-session-2",
+            project_path="/test/project",
+            importance=0.8,
+        )
+        tmp_store.add_memory(other_memory)
+
+        query = Query(text='"SQLite for local storage"')
+        results = tmp_store.search(query)
+
+        assert len(results) == 1
+        assert results[0].content == sample_memory.content
+
+    def test_search_supports_and_operator(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+        query = Query(text="SQLite AND local")
+        results = tmp_store.search(query)
+        assert len(results) == 1
+
+    def test_search_supports_prefix_wildcard(self, tmp_store, sample_memory):
+        tmp_store.add_memory(sample_memory)
+        query = Query(text="SQL*")
+        results = tmp_store.search(query)
+        assert len(results) == 1
+
 
 class TestParsers:
     def test_auto_detect_claude(self, tmp_path):
@@ -151,6 +204,5 @@ class TestParsers:
         sessions = list(parse_claude_code_jsonl(f))
         assert len(sessions) >= 1
         assert sessions[0].agent == "claude"
-
 
 import json

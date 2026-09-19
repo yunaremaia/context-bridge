@@ -9,6 +9,45 @@ from typing import Optional
 from .models import Memory, MemoryType, Session, Query
 
 
+def _sanitize_fts5_query(query: str) -> str:
+    """Sanitize FTS5 input while preserving supported query syntax."""
+    tokens = []
+    current = []
+    in_quote = False
+
+    for char in query:
+        if char == '"':
+            current.append(char)
+            in_quote = not in_quote
+        elif char.isspace() and not in_quote:
+            if current:
+                tokens.append("".join(current))
+                current = []
+        else:
+            current.append(char)
+
+    if current:
+        tokens.append("".join(current))
+
+    sanitized = []
+
+    for index, token in enumerate(tokens):
+        if (
+            token in {"AND", "OR", "NOT"}
+            and index > 0
+            and index < len(tokens) - 1
+        ):
+            sanitized.append(token)
+        elif token.startswith('"') and token.endswith('"') and len(token) >= 2:
+            phrase = token[1:-1].replace('"', '""')
+            sanitized.append(f'"{phrase}"')
+        elif token.endswith("*") and token[:-1].replace("_", "").isalnum():
+            sanitized.append(token)
+        else:
+            sanitized.append(f'"{token.replace(chr(34), chr(34) * 2)}"')
+
+    return " ".join(sanitized)
+
 class MemoryStore:
     def __init__(self, db_path: Path):
         self.db_path = db_path
@@ -107,7 +146,7 @@ class MemoryStore:
             JOIN memories_fts f ON m.id = f.rowid
             WHERE memories_fts MATCH ?
         """
-        params: list = [escaped_query]
+        params: list = [_sanitize_fts5_query(query.text)]
 
         if query.agent:
             sql += " AND m.source_agent = ?"
