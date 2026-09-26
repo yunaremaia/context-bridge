@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=84.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "context-bridge"
+version = "0.1.0"
+description = "Universal session memory for AI agents — capture, index, retrieve"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Yunare Maia", email = "yunare@gmail.com"}
+]
+keywords = ["ai-agent", "memory", "context", "session", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "click>=8.5.0",
+    "rich>=15.0.0",
+    "pydantic>=2.13.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.1.1", "pytest-cov>=7.1.0", "ruff>=0.11.0"]
+
+[project.scripts]
+context-bridge = "context_bridge.cli:main"
