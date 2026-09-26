@@ -2,7 +2,8 @@
 
 **Capture. Index. Retrieve.** A local-first context layer that works with any AI coding agent.
 
-![PyPI](https://badge.fury.io/py/context-bridge) ![License](https://img.shields.io/endpoint?url=https://img.shields.io/licenses/MIT) ![Stars](https://img.shields.io/github/stars/yunaremaia/context-bridge)
+![PyPI](https://badge.fury.io/py/context-bridge)
+![CI](https://github.com/yunaremaia/context-bridge/workflows/CI/badge.svg) ![License](https://img.shields.io/endpoint?url=https://img.shields.io/licenses/MIT) ![Stars](https://img.shields.io/github/stars/yunaremaia/context-bridge)
 
 ---
 
