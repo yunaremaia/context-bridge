@@ -2,8 +2,7 @@
 
 **Capture. Index. Retrieve.** A local-first context layer that works with any AI coding agent.
 
-![PyPI](https://badge.fury.io/py/context-bridge)
-![CI](https://github.com/yunaremaia/context-bridge/workflows/CI/badge.svg) ![License](https://img.shields.io/endpoint?url=https://img.shields.io/licenses/MIT) ![Stars](https://img.shields.io/github/stars/yunaremaia/context-bridge)
+[![CI](https://github.com/yunaremaia/context-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/yunaremaia/context-bridge/actions) [![License](https://img.shields.io/github/license/yunaremaia/context-bridge)](https://github.com/yunaremaia/context-bridge/blob/main/LICENSE) [![Stars](https://img.shields.io/github/stars/yunaremaia/context-bridge)](https://github.com/yunaremaia/context-bridge)
 
 ---
 
@@ -25,7 +24,7 @@ No cloud. No API keys. No vendor lock-in.
 ## Quick Start
 
 ```bash
-pip install context-bridge
+pip install git+https://github.com/yunaremaia/context-bridge.git
 
 # Initialize in your project
 context-bridge init
@@ -56,6 +55,16 @@ context-bridge inject --agent claude
 - No open-source universal memory layer exists
 - Show HN validation: hmem, Engram, Memobase all trending
 - Every developer using AI agents has this problem
+
+## Sponsoring
+
+`context-bridge` is MIT licensed and free to use. If it earns a permanent place in your setup, you can support continued maintenance via GitHub Sponsors or by sending SOL to the project treasury wallet:
+
+```text
+Eeztv1nCYUt1fwGWpzKC948gaWfjejYCAuLtUMgzDWbW
+```
+
+Funding platforms are configured in [`.github/FUNDING.yml`](.github/FUNDING.yml).
 
 ## License
 

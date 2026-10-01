@@ -1,12 +1,38 @@
+# Byte-compiled / optimized
 *.pyc
+*.py[cod]
+*$py.class
 __pycache__/
-*.egg-info/
+
+# Distribution / packaging
 build/
 dist/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Unit test / coverage
 .pytest_cache/
-.ruff_cache/
-.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Environments
 .venv/
 venv/
-.coverage
-htmlcov/
+env/
+ENV/
+
+# Type checkers / linters
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
