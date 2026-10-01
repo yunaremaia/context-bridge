@@ -1,15 +1,44 @@
 """SQLite-backed memory store with full-text search."""
 
-import re
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 from .models import Memory, MemoryType, Query, Session
 
+FTS5_OPERATORS = frozenset({"AND", "OR", "NOT"})
+
+
+def _quote_fts5_token(token: str) -> str:
+    """Wrap a token as an inert FTS5 string literal."""
+    return '"' + token.replace('"', '""') + '"'
+
+
+def _collapse_operator_runs(tokens: list[str]) -> list[str]:
+    """Reduce each run of adjacent operators to a single operator.
+
+    FTS5 accepts a bare operator only between two operands, so ``a AND NOT b``
+    would otherwise become ``"a" AND NOT "b"`` and raise a syntax error. FTS5's
+    ``NOT`` is already an AND-NOT, so it subsumes any operator it follows.
+    """
+    collapsed: list[str] = []
+    for token in tokens:
+        if token in FTS5_OPERATORS and collapsed and collapsed[-1] in FTS5_OPERATORS:
+            if token == "NOT":
+                collapsed[-1] = "NOT"
+            continue
+        collapsed.append(token)
+    return collapsed
+
 
 def _sanitize_fts5_query(query: str) -> str:
-    """Sanitize FTS5 input while preserving supported query syntax."""
+    """Sanitize FTS5 input while preserving supported query syntax.
+
+    Every token is emitted either as an inert quoted string or as a bare
+    operator/prefix in a position where FTS5 accepts one, so the result is
+    always syntactically valid and cannot be used to alter the surrounding
+    query. This is the single sanitizer used by every search path.
+    """
     tokens = []
     current = []
     in_quote = False
@@ -28,18 +57,31 @@ def _sanitize_fts5_query(query: str) -> str:
     if current:
         tokens.append("".join(current))
 
+    tokens = _collapse_operator_runs(tokens)
     sanitized = []
 
     for index, token in enumerate(tokens):
-        if token in {"AND", "OR", "NOT"} and index > 0 and index < len(tokens) - 1:
-            sanitized.append(token)
-        elif token.startswith('"') and token.endswith('"') and len(token) >= 2:
-            phrase = token[1:-1].replace('"', '""')
-            sanitized.append(f'"{phrase}"')
-        elif token.endswith("*") and token[:-1].replace("_", "").isalnum():
-            sanitized.append(token)
+        if token in FTS5_OPERATORS:
+            has_operand_before = index > 0 and tokens[index - 1] not in FTS5_OPERATORS
+            has_operand_after = (
+                index < len(tokens) - 1 and tokens[index + 1] not in FTS5_OPERATORS
+            )
+            # A bare operator is only valid with an operand on both sides.
+            sanitized.append(
+                token
+                if has_operand_before and has_operand_after
+                else _quote_fts5_token(token)
+            )
+        elif len(token) >= 2 and token.startswith('"') and token.endswith('"'):
+            sanitized.append(_quote_fts5_token(token[1:-1]))
         else:
-            sanitized.append(f'"{token.replace(chr(34), chr(34) * 2)}"')
+            stem = token[:-1] if token.endswith("*") else ""
+            is_prefix = bool(stem) and stem.replace("_", "").isalnum()
+            # AND*/OR*/NOT* are rejected by FTS5, so reserved words stay quoted.
+            if is_prefix and stem.upper() not in FTS5_OPERATORS:
+                sanitized.append(token)
+            else:
+                sanitized.append(_quote_fts5_token(token))
 
     return " ".join(sanitized)
 
@@ -143,21 +185,9 @@ class MemoryStore:
         self.conn.commit()
         return cur.lastrowid or 0
 
-    @staticmethod
-    def _escape_fts5_query(text: str) -> str:
-        """Escape special FTS5 characters in user query to prevent query syntax errors."""
-        if not text:
-            return ""
-        clean = re.sub(r"[^\w\s]", " ", text)
-        tokens = []
-        for word in clean.split():
-            if word:
-                tokens.append(f'"{word}"')
-        return " ".join(tokens)
-
     def search(self, query: Query) -> list[Memory]:
-        escaped_query = self._escape_fts5_query(query.text)
-        if not escaped_query:
+        sanitized = _sanitize_fts5_query(query.text)
+        if not sanitized:
             return []
 
         sql = """
@@ -165,7 +195,7 @@ class MemoryStore:
             JOIN memories_fts f ON m.id = f.rowid
             WHERE memories_fts MATCH ?
         """
-        params: list = [_sanitize_fts5_query(query.text)]
+        params: list = [sanitized]
 
         if query.agent:
             sql += " AND m.source_agent = ?"
