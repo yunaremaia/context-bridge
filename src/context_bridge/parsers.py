@@ -9,6 +9,28 @@ from pathlib import Path
 from .models import Session
 
 
+def extract_text_content(content) -> list[str]:
+    """Return the text fragments of a message ``content`` value.
+
+    ``content`` is a list of blocks in most events, but a plain string is also
+    valid and common for short replies. Iterating a string yields characters,
+    so the string case is handled explicitly instead of being walked as blocks.
+    Non-text blocks (tool calls, images) are dropped.
+    """
+    if isinstance(content, str):
+        return [content]
+    if not isinstance(content, list):
+        return []
+
+    parts = []
+    for block in content:
+        if isinstance(block, str):
+            parts.append(block)
+        elif isinstance(block, dict) and block.get("type") == "text":
+            parts.append(block.get("text", ""))
+    return parts
+
+
 def parse_claude_code_jsonl(
     file_path: Path, agent: str = "claude"
 ) -> Iterator[Session]:
@@ -36,11 +58,7 @@ def parse_claude_code_jsonl(
             content_parts = []
             message = data.get("message", {})
             if isinstance(message, dict):
-                for block in message.get("content", []):
-                    if isinstance(block, dict) and block.get("type") == "text":
-                        content_parts.append(block.get("text", ""))
-                    elif isinstance(block, str):
-                        content_parts.append(block)
+                content_parts = extract_text_content(message.get("content"))
             content = "\n".join(content_parts)
             if not content.strip():
                 content = json.dumps(data, ensure_ascii=False)
@@ -97,9 +115,7 @@ def parse_opencode_jsonl(file_path: Path, agent: str = "opencode") -> Iterator[S
                 continue
             msg = data.get("message", {})
             if isinstance(msg, dict):
-                for block in msg.get("content", []):
-                    if isinstance(block, dict) and block.get("type") == "text":
-                        content_parts.append(block.get("text", ""))
+                content_parts.extend(extract_text_content(msg.get("content")))
         content = "\n".join(content_parts)
         if content.strip():
             yield Session(
