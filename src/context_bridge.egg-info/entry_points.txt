@@ -1,2 +1,0 @@
-[console_scripts]
-context-bridge = context_bridge.cli:main
