@@ -39,6 +39,11 @@ context-bridge recall "How did we handle authentication?"
 context-bridge inject --agent claude
 ```
 
+> **Not yet on PyPI.** Install from git with the line above. The command you run
+> is `context-bridge`; the distribution name on PyPI is `context-bridge-py`. The
+> short `context-bridge` name on PyPI belongs to an unrelated project by another
+> author, so it is not used here and never will be.
+
 ## Architecture
 
 ```
