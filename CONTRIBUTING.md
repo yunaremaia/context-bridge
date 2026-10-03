@@ -28,3 +28,11 @@
 - Write tests for new functionality in `tests/`
 - Ensure all tests pass before opening a PR
 - Run `pytest --cov=src` for coverage
+
+## Code of Conduct
+
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold it.
+
+## Security
+
+Please do not report security vulnerabilities through public issues. See [SECURITY.md](SECURITY.md).
