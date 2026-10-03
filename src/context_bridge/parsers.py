@@ -45,6 +45,10 @@ def parse_claude_code_jsonl(
             except json.JSONDecodeError:
                 continue
 
+            # Skip non-dict top-level elements (e.g. JSON arrays)
+            if not isinstance(data, dict):
+                continue
+
             # Claude Code stores events with type "user" or "assistant"
             event_type = data.get("type", "")
             if event_type not in ("user", "assistant"):
@@ -79,6 +83,10 @@ def parse_codex_json(file_path: Path, agent: str = "codex") -> Iterator[Session]
     with open(file_path, "r") as f:
         data = json.load(f)
 
+    # Skip non-dict top-level elements (e.g. JSON arrays)
+    if not isinstance(data, dict):
+        return
+
     session_id = data.get("session_id", file_path.stem)
     project_path = data.get("project_path", str(file_path.parent))
     timestamp = data.get("timestamp", datetime.now(tz=timezone.utc).isoformat())
@@ -112,6 +120,10 @@ def parse_opencode_jsonl(file_path: Path, agent: str = "opencode") -> Iterator[S
             try:
                 data = json.loads(line)
             except json.JSONDecodeError:
+                continue
+
+            # Skip non-dict top-level elements (e.g. JSON arrays)
+            if not isinstance(data, dict):
                 continue
             msg = data.get("message", {})
             if isinstance(msg, dict):

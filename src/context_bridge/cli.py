@@ -62,7 +62,14 @@ def index(ctx, path):
                 if not store.is_indexed(session.session_id):
                     store.add_session(session)
                     total_sessions += 1
-        except (json.JSONDecodeError, ValueError, OSError, KeyError, TypeError):
+        except (
+            json.JSONDecodeError,
+            ValueError,
+            OSError,
+            KeyError,
+            TypeError,
+            AttributeError,
+        ):
             # Skip files that fail to parse (malformed JSON, missing fields, etc.)
             continue
 
