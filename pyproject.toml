@@ -49,3 +49,8 @@ dev = [
 
 [project.scripts]
 context-bridge = "context_bridge.cli:main"
+
+[tool.ruff.lint]
+# Extend the defaults (E4/E7/E9/F) rather than replacing them, so pyflakes
+# stays on while bugbear and pyupgrade rules are enforced in CI too.
+extend-select = ["B", "UP"]

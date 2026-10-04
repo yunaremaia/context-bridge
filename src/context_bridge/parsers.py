@@ -2,6 +2,7 @@
 
 import json
 import re
+import warnings
 from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,14 +36,22 @@ def parse_claude_code_jsonl(
     file_path: Path, agent: str = "claude"
 ) -> Iterator[Session]:
     """Parse Claude Code JSONL session logs."""
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line:
                 continue
             try:
                 data = json.loads(line)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                # A half-written trailing line is normal for a third-party
+                # writer that got killed, so keep parsing -- but say what was
+                # dropped. Skipping corruption with no trace is what let `index`
+                # report "no sessions found" for a file that had some.
+                warnings.warn(
+                    f"{file_path}:{line_num}: skipping unparsable JSONL line: {exc}",
+                    stacklevel=2,
+                )
                 continue
 
             # Skip non-dict top-level elements (e.g. JSON arrays)
@@ -80,7 +89,7 @@ def parse_claude_code_jsonl(
 
 def parse_codex_json(file_path: Path, agent: str = "codex") -> Iterator[Session]:
     """Parse Codex JSON session logs."""
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         data = json.load(f)
 
     # Skip non-dict top-level elements (e.g. JSON arrays)
@@ -111,15 +120,21 @@ def parse_codex_json(file_path: Path, agent: str = "codex") -> Iterator[Session]
 def parse_opencode_jsonl(file_path: Path, agent: str = "opencode") -> Iterator[Session]:
     """Parse OpenCode JSONL session logs."""
     session_id = file_path.stem
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         content_parts = []
-        for line in f:
+        for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line:
                 continue
             try:
                 data = json.loads(line)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                # Same contract as parse_claude_code_jsonl: keep the good lines,
+                # but never drop a corrupt one without naming it.
+                warnings.warn(
+                    f"{file_path}:{line_num}: skipping unparsable JSONL line: {exc}",
+                    stacklevel=2,
+                )
                 continue
 
             # Skip non-dict top-level elements (e.g. JSON arrays)
