@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **`context-bridge index` no longer picks a parser from a substring of the
+  absolute path.** `auto_detect_parser` tested `"hermes" in str(parent)`, so a
+  log at `/srv/hermes-data/plain.jsonl` was parsed as a Hermes markdown log, no
+  sessions were found in it, and the run reported success with the session
+  silently unindexed — the same failure mode #117 removed for corrupt lines,
+  one level up. Routing now follows the markers inside the file (`type` for
+  Claude Code, `entries` for Codex, `message` for OpenCode), and a JSON file
+  carrying no marker raises `ParserNotDetectedError` instead of falling through
+  to a default parser. `index` names every file it could not route.
+
+  Behaviour change: a marker-less JSON file used to be handed to the Claude Code
+  parser by default and index nothing; it is now reported as unroutable, and a
+  caller that wants it parsed can call the parser directly.
+
 ## [0.2.0] - 2026-10-02
 
 ### Changed

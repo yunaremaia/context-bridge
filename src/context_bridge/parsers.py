@@ -183,18 +183,67 @@ def parse_hermes_log(file_path: Path, agent: str = "hermes") -> Iterator[Session
             )
 
 
-def auto_detect_parser(file_path: Path):
-    """Detect agent type from file path/name and return appropriate parser."""
-    name = file_path.name.lower()
-    parent = str(file_path.parent).lower()
+class ParserNotDetectedError(Exception):
+    """No agent format could be recognised for a file."""
 
-    if "claude" in parent or ".claude" in parent:
-        return parse_claude_code_jsonl
-    if "codex" in parent or "codex" in name:
-        return parse_codex_json
-    if "opencode" in parent or "opencode" in name:
-        return parse_opencode_jsonl
-    if "hermes" in parent or "hermes" in name:
+
+# Extensions whose content is JSON, and therefore decides the format.
+_JSON_SUFFIXES = frozenset({".json", ".jsonl"})
+
+
+def _json_head(file_path: Path) -> dict | None:
+    """Return the file's first JSON object, or None if there is none.
+
+    A ``.json`` file holds one document, so it is read whole; a ``.jsonl`` file
+    is read line by line, and its first object is the one that identifies the
+    writer.
+    """
+    try:
+        if file_path.suffix.lower() == ".json":
+            text = file_path.read_text(errors="replace")
+        else:
+            with open(file_path) as f:
+                text = next((line for line in f if line.strip()), "")
+    except OSError:
+        return None
+
+    if not text.strip():
+        return None
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def auto_detect_parser(file_path: Path):
+    """Detect agent type from file content and return the appropriate parser.
+
+    The format marker lives inside the file. The path is not a signal: matching
+    a substring of the absolute path routed ``/srv/hermes-data/plain.jsonl`` to
+    the Hermes parser, and matching a whole path component only moves the same
+    false positive one level up (anything under ``/root/.hermes/`` matched, even
+    a file another agent wrote into a scratch directory). Every format below is
+    fully described by its own markers, so the content decides alone, and an
+    unmarked JSON file raises instead of being handed to a parser that would
+    read it, find nothing and let the session go silently unindexed.
+    """
+    if file_path.suffix.lower() not in _JSON_SUFFIXES:
+        # Markdown/text: the Hermes reader is the only one that handles it.
         return parse_hermes_log
-    # Default: try Claude Code format (most common)
-    return parse_claude_code_jsonl
+
+    data = _json_head(file_path)
+    if data is not None:
+        # Claude Code events carry a top-level "type", OpenCode lines only ever
+        # carry a "message", and a Codex session carries an "entries" list.
+        if data.get("type") in ("user", "assistant"):
+            return parse_claude_code_jsonl
+        if isinstance(data.get("entries"), list):
+            return parse_codex_json
+        if isinstance(data.get("message"), dict):
+            return parse_opencode_jsonl
+
+    raise ParserNotDetectedError(
+        f"{file_path}: could not detect a session format from its content. "
+        f"Call the parser for this agent directly instead."
+    )
