@@ -5,7 +5,11 @@ import sqlite3
 import pytest
 
 from context_bridge.models import Memory, MemoryType, Query, Session
-from context_bridge.parsers import auto_detect_parser, parse_claude_code_jsonl
+from context_bridge.parsers import (
+    auto_detect_parser,
+    parse_claude_code_jsonl,
+    parse_codex_json,
+)
 from context_bridge.store import MemoryStore
 
 
@@ -181,17 +185,17 @@ class TestParsers:
     def test_auto_detect_claude(self, tmp_path):
         f = tmp_path / ".claude" / "session.jsonl"
         f.parent.mkdir()
-        f.write_text("{}")
+        # Routing follows the content markers, not the directory name.
+        f.write_text(json.dumps({"type": "assistant", "message": {}}) + "\n")
         parser = auto_detect_parser(f)
         assert parser == parse_claude_code_jsonl
 
     def test_auto_detect_codex(self, tmp_path):
         f = tmp_path / "codex-sessions" / "sess.json"
         f.parent.mkdir()
-        f.write_text("{}")
+        f.write_text(json.dumps({"session_id": "s1", "entries": []}))
         parser = auto_detect_parser(f)
-        # Falls through to claude default since codex needs content check
-        assert callable(parser)
+        assert parser == parse_codex_json
 
     def test_parse_claude_code_jsonl(self, tmp_path):
         f = tmp_path / "session.jsonl"

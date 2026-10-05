@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .models import Memory, MemoryType, Query
-from .parsers import auto_detect_parser
+from .parsers import ParserNotDetectedError, auto_detect_parser
 from .store import MemoryStore
 
 console = Console()
@@ -55,6 +55,7 @@ def index(ctx, path):
         files.extend(base.glob(pattern))
 
     total_sessions = 0
+    unroutable: list[str] = []
     for fp in files:
         try:
             parser = auto_detect_parser(fp)
@@ -62,6 +63,11 @@ def index(ctx, path):
                 if not store.is_indexed(session.session_id):
                     store.add_session(session)
                     total_sessions += 1
+        except ParserNotDetectedError as exc:
+            # Naming the file is the whole point: it is not an agent session and
+            # was not indexed, and the run says so instead of counting it in.
+            unroutable.append(str(exc))
+            continue
         except (
             json.JSONDecodeError,
             ValueError,
@@ -77,6 +83,8 @@ def index(ctx, path):
     console.print(
         f"[green]✅ Indexed {total_sessions} sessions from {len(files)} files[/green]"
     )
+    for message in unroutable:
+        console.print(f"[yellow]⚠️  {message}[/yellow]")
 
 
 @cli.command()
