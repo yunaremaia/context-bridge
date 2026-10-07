@@ -64,7 +64,7 @@ def parse_claude_code_jsonl(
                 continue
 
             timestamp = data.get("timestamp", datetime.now(tz=timezone.utc).isoformat())
-            session_id = data.get("session_id", f"claude-{file_path.stem}")
+            session_id = data.get("session_id", f"claude-{file_path.resolve()}")
             project_path = data.get("cwd", str(file_path.parent))
 
             # Extract text content from messages
@@ -96,7 +96,7 @@ def parse_codex_json(file_path: Path, agent: str = "codex") -> Iterator[Session]
     if not isinstance(data, dict):
         return
 
-    session_id = data.get("session_id", file_path.stem)
+    session_id = data.get("session_id", str(file_path.resolve()))
     project_path = data.get("project_path", str(file_path.parent))
     timestamp = data.get("timestamp", datetime.now(tz=timezone.utc).isoformat())
 
@@ -119,7 +119,7 @@ def parse_codex_json(file_path: Path, agent: str = "codex") -> Iterator[Session]
 
 def parse_opencode_jsonl(file_path: Path, agent: str = "opencode") -> Iterator[Session]:
     """Parse OpenCode JSONL session logs."""
-    session_id = file_path.stem
+    session_id = str(file_path.resolve())
     with open(file_path) as f:
         content_parts = []
         for line_num, line in enumerate(f, 1):
@@ -162,7 +162,7 @@ def parse_hermes_log(file_path: Path, agent: str = "hermes") -> Iterator[Session
     sessions = re.split(r"(?:^|\n)## Session: (.+?)\n", content)
     if len(sessions) <= 1:
         yield Session(
-            session_id=file_path.stem,
+            session_id=str(file_path.resolve()),
             agent=agent,
             project_path=str(file_path.parent),
             file_path=str(file_path),

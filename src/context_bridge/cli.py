@@ -61,8 +61,9 @@ def index(ctx, path):
             parser = auto_detect_parser(fp)
             for session in parser(fp):
                 if not store.is_indexed(session.session_id):
-                    store.add_session(session)
-                    total_sessions += 1
+                    rowid = store.add_session(session)
+                    if rowid > 0:
+                        total_sessions += 1
         except ParserNotDetectedError as exc:
             # Naming the file is the whole point: it is not an agent session and
             # was not indexed, and the run says so instead of counting it in.

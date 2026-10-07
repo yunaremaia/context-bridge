@@ -166,6 +166,11 @@ class MemoryStore:
         return rowid
 
     def add_session(self, session: Session) -> int:
+        existing = self.conn.execute(
+            "SELECT 1 FROM sessions WHERE session_id = ?", (session.session_id,)
+        ).fetchone()
+        if existing:
+            return 0
         cur = self.conn.execute(
             """
             INSERT OR IGNORE INTO sessions (session_id, agent, project_path,
