@@ -1,6 +1,5 @@
 """Tests for session_id collision fix (issue #119)."""
 import json
-from pathlib import Path
 
 from context_bridge.models import Session
 from context_bridge.parsers import (
