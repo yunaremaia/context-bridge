@@ -165,9 +165,9 @@ class TestDocsInstallFromGitWhileUnpublished:
     """The expected install line is asserted first, so a failure names the fix."""
 
     def test_readme_carries_the_expected_install_line(self):
-        assert EXPECTED_INSTALL in _read(README), (
-            f"README must carry `{EXPECTED_INSTALL}`"
-        )
+        assert EXPECTED_INSTALL in _read(
+            README
+        ), f"README must carry `{EXPECTED_INSTALL}`"
 
 
 class TestNoBarePyPIInstallAnywhere:
@@ -318,9 +318,7 @@ class TestReadmeDisclosesTheNameSituation:
         assert any(
             phrase in text
             for phrase in ("not published", "not yet on pypi", "not yet published")
-        ), (
-            "README must state the project is not on PyPI yet, so the git URL is expected"
-        )
+        ), "README must state the project is not on PyPI yet, so the git URL is expected"
 
 
 class TestPackaging:
@@ -367,14 +365,14 @@ class TestPackaging:
         }, f"console script imports {top_level!r} but src/ does not package it"
 
         resolved = packaged / Path(*module_path.split(".")).with_suffix(".py")
-        assert resolved.exists(), (
-            f"console script module not in wheel: {module_path} ({resolved})"
-        )
+        assert (
+            resolved.exists()
+        ), f"console script module not in wheel: {module_path} ({resolved})"
 
         source = resolved.read_text(encoding="utf-8")
-        assert re.search(rf"^def {re.escape(attr)}\b", source, re.MULTILINE), (
-            f"{target} does not define {attr}() in {resolved.name}"
-        )
+        assert re.search(
+            rf"^def {re.escape(attr)}\b", source, re.MULTILINE
+        ), f"{target} does not define {attr}() in {resolved.name}"
 
 
 @pytest.mark.parametrize("line", ["pip install pre-commit", "pip install -e ."])

@@ -164,12 +164,16 @@ class TestSanitizerAlwaysProducesValidFts5:
                 continue
             assert index > 0, f"leading operator in {payload!r}"
             assert index < len(tokens) - 1, f"trailing operator in {payload!r}"
-            assert tokens[index - 1] not in {"AND", "OR", "NOT"}, (
-                f"stacked operator in {payload!r}"
-            )
-            assert tokens[index + 1] not in {"AND", "OR", "NOT"}, (
-                f"stacked operator in {payload!r}"
-            )
+            assert tokens[index - 1] not in {
+                "AND",
+                "OR",
+                "NOT",
+            }, f"stacked operator in {payload!r}"
+            assert tokens[index + 1] not in {
+                "AND",
+                "OR",
+                "NOT",
+            }, f"stacked operator in {payload!r}"
 
     def test_empty_query_sanitizes_to_empty(self):
         assert _sanitize_fts5_query("") == ""

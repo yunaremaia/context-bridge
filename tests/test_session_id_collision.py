@@ -1,4 +1,5 @@
 """Tests for session_id collision fix (issue #119)."""
+
 import json
 
 from context_bridge.models import Session
