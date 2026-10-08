@@ -3,7 +3,7 @@
 from .models import Memory, MemoryType, Query, Session
 from .parsers import parse_claude_code_jsonl, parse_codex_json
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     "Memory",
     "MemoryType",
