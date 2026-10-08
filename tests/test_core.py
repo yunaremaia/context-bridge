@@ -180,6 +180,24 @@ class TestStore:
         results = tmp_store.search(query)
         assert len(results) == 1
 
+    def test_index_populates_memories(self, tmp_store, sample_session):
+        """After add_session + add_memory (the index code path), search finds the content."""
+        sid = tmp_store.add_session(sample_session)
+        assert sid > 0
+        memory = Memory(
+            content=sample_session.content,
+            memory_type=MemoryType.PATTERN,
+            source_agent=sample_session.agent,
+            session_id=sample_session.session_id,
+            project_path=sample_session.project_path,
+        )
+        mid = tmp_store.add_memory(memory)
+        assert mid > 0
+        query = Query(text="SQLite")
+        results = tmp_store.search(query)
+        assert len(results) >= 1
+        assert any(r.session_id == sample_session.session_id for r in results)
+
 
 class TestParsers:
     def test_auto_detect_claude(self, tmp_path):

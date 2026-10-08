@@ -64,6 +64,14 @@ def index(ctx, path):
                     rowid = store.add_session(session)
                     if rowid > 0:
                         total_sessions += 1
+                        memory = Memory(
+                            content=session.content,
+                            memory_type=MemoryType.PATTERN,
+                            source_agent=session.agent,
+                            session_id=session.session_id,
+                            project_path=session.project_path,
+                        )
+                        store.add_memory(memory)
         except ParserNotDetectedError as exc:
             # Naming the file is the whole point: it is not an agent session and
             # was not indexed, and the run says so instead of counting it in.
